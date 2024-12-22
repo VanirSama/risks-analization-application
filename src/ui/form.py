@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import (
-    QHeaderView, QLineEdit, QMainWindow, QMenu, QPushButton, QScrollArea, QSizePolicy, QTableWidgetItem, QVBoxLayout, 
+    QGridLayout, QHeaderView, QLineEdit, QMainWindow, QMenu, QPushButton, QScrollArea, QSizePolicy, QTableWidgetItem, QVBoxLayout, 
     QHBoxLayout, QWidget, QLabel, QFrame, QTableWidget
 )
 from PySide6.QtGui import QIcon, QAction
@@ -33,19 +33,19 @@ class RiskDataTable(QTableWidget):
         self._column_names = [
             '✏️',
             '№',
-            'List №',
-            'Risk',
-            'Event',
-            'Qual. value of severity',
-            'Pts. value of severity',
-            'Qual. value of hazard exposure',
-            'Pts. value of hazard exposure',
-            'Qual. value of hazard occurrence',
-            'Pts. value of hazard occurrence',
-            'Sum of weighing factors',
-            'Weighting coefficient of probability of danger  occurrence',
-            'Risks for identified hazards',
-            'Risk significance assessment for a particular hazard',
+            'Номер по перечню',
+            'Опасность',
+            'Опасное событие',
+            'Качественное значение тяжести ущерба',
+            'Баллы по тяжести ущерба, Т',
+            'Качественное значение подверженности опасности',
+            'Баллы подверженности опасности, П',
+            'Качественное значение вероятности возникновения опасности, В',
+            'Вероятность возникновения опасности, В',
+            'Сумма весовых коэффициентов',
+            'Весовой коэффициент вероятности возникновения опасности, Кв',
+            'Риски по идентифицированным опасностям',
+            'Оценка значимости риска по отдельной опасности',
         ]
 
         super().__init__(1, len(self._column_names), parent)
@@ -147,7 +147,7 @@ class RiskAnalysisMainForm(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Risk Analysis App")
+        self.setWindowTitle("Приложение для анализа рисков")
         self.setGeometry(200, 200, 400, 300)
 
         self.setStyleSheet("""
@@ -218,7 +218,7 @@ class RiskAnalysisMainForm(QMainWindow):
             }
         """)
 
-        self._top_dropdown_menu = QMenu("☰ Menu", menu_bar)
+        self._top_dropdown_menu = QMenu("☰ Меню", menu_bar)
         self._top_dropdown_menu.setStyleSheet("""
             QMenu {
                 background-color: #4a4a7d;
@@ -235,7 +235,7 @@ class RiskAnalysisMainForm(QMainWindow):
         """)
 
         for i in range(1, 6):
-            action = QAction(f"Option {i}", self._top_dropdown_menu)
+            action = QAction(f"Опция {i}", self._top_dropdown_menu)
             action.setIcon(QIcon.fromTheme("folder"))
             self._top_dropdown_menu.addAction(action)
 
@@ -250,7 +250,7 @@ class RiskAnalysisMainForm(QMainWindow):
         table_widget_scrollarea.setWidgetResizable(True)
         table_widget_scrollarea.setWidget(table_widget)
         
-        self._title_label = QLabel("Table 1", table_widget)
+        self._title_label = QLabel("Таблица", table_widget)
         self._title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._title_label.setStyleSheet("font-size: 24px; color: #4a4a7d; font-weight: bold;")
 
@@ -286,31 +286,31 @@ class RiskAnalysisMainForm(QMainWindow):
         self._professionTextEdit = QLineEdit('', table_params_inner_frame)
         self._professionTextEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
         table_params_frame_inner_layout.addWidget(self._professionTextEdit)
-        table_params_frame_inner_layout.addWidget(QLabel('Profession', table_params_inner_frame),
+        table_params_frame_inner_layout.addWidget(QLabel('Наименование профессии (должности) работника', table_params_inner_frame),
                                                   alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
         self._structureDivisionTextEdit = QLineEdit('', table_params_inner_frame)
         self._structureDivisionTextEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
         table_params_frame_inner_layout.addWidget(self._structureDivisionTextEdit)
-        table_params_frame_inner_layout.addWidget(QLabel('Structure division', table_params_inner_frame),
+        table_params_frame_inner_layout.addWidget(QLabel('Наименование структурного подразделения', table_params_inner_frame),
                                                   alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
         self._workDescriptionTextEdit = QLineEdit('', table_params_inner_frame)
         self._workDescriptionTextEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
         table_params_frame_inner_layout.addWidget(self._workDescriptionTextEdit)
-        table_params_frame_inner_layout.addWidget(QLabel('Brief description of work', table_params_inner_frame),
+        table_params_frame_inner_layout.addWidget(QLabel('Краткое описание выполняемой работы', table_params_inner_frame),
                                                   alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
         self._usedInstrumentsMaterialsTextEdit = QLineEdit('', table_params_inner_frame)
         self._usedInstrumentsMaterialsTextEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
         table_params_frame_inner_layout.addWidget(self._usedInstrumentsMaterialsTextEdit)
-        table_params_frame_inner_layout.addWidget(QLabel('Used instruments and materials', table_params_inner_frame),
+        table_params_frame_inner_layout.addWidget(QLabel('Используемое оборудование, материалы, сырья', table_params_inner_frame),
                                                   alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
         self.regulatoryDocumentsTextEdit = QLineEdit('', table_params_inner_frame)
         self.regulatoryDocumentsTextEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
         table_params_frame_inner_layout.addWidget(self.regulatoryDocumentsTextEdit)
-        table_params_frame_inner_layout.addWidget(QLabel('Regulatory documents', table_params_inner_frame),
+        table_params_frame_inner_layout.addWidget(QLabel('Нормативные документы', table_params_inner_frame),
                                                   alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
         table_widget_divider2 = QFrame(table_widget)
@@ -325,6 +325,51 @@ class RiskAnalysisMainForm(QMainWindow):
         table_widget_divider3.setFrameShadow(QFrame.Shadow.Sunken)
         table_widget_divider3.setStyleSheet("border: 4px solid #A6B1E1;")
 
+        table_summary_widget = QWidget(table_widget)
+        table_summary_widget.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                font-weight: bold;
+                color: #424874;
+            }
+            QLabel#CLASSIFICATION_VALUE_TEXT {
+                color: green;
+            }
+        """)
+        table_summary_widget_layout_outer = QHBoxLayout(table_summary_widget)
+        table_summary_widget_layout_outer.setSpacing(0)
+        table_summary_widget_layout_outer.addStretch(1)
+        table_summary_widget_layout_inner = QGridLayout()
+        table_summary_widget_layout_inner.setVerticalSpacing(10)
+        table_summary_widget_layout_inner.setHorizontalSpacing(20)
+        table_summary_widget_layout_outer.addLayout(table_summary_widget_layout_inner)
+        table_summary_widget_layout_outer.addStretch(1)
+
+        summary_risk_level_description_label = QLabel(parent=table_summary_widget)
+        summary_risk_level_description_label.setText('Уровень профессионального риска на рабочем месте по результатам оценки:')
+        self._summary_risk_level_value_label = QLabel('8.20', parent=table_summary_widget)
+        table_summary_widget_layout_inner.addWidget(summary_risk_level_description_label, 0, 0)
+        table_summary_widget_layout_inner.addWidget(self._summary_risk_level_value_label, 0, 1)
+        
+        summary_risk_indicator_description_label = QLabel(parent=table_summary_widget)
+        summary_risk_indicator_description_label.setText('Показатель, учитывающий результаты специальной оценки условий труда:')
+        self._summary_risk_indicator_value_label = QLabel('-1.0', parent=table_summary_widget)
+        table_summary_widget_layout_inner.addWidget(summary_risk_indicator_description_label, 1, 0)
+        table_summary_widget_layout_inner.addWidget(self._summary_risk_indicator_value_label, 1, 1)
+
+        summary_risk_final_level_description_label = QLabel(parent=table_summary_widget)
+        summary_risk_final_level_description_label.setText('Итоговый уровень профессионального риска по результатам оценки:')
+        self._summary_risk_final_level_value_label = QLabel('7.20', parent=table_summary_widget)
+        table_summary_widget_layout_inner.addWidget(summary_risk_final_level_description_label, 2, 0)
+        table_summary_widget_layout_inner.addWidget(self._summary_risk_final_level_value_label, 2, 1)
+        
+        summary_risk_classification_description_label = QLabel(parent=table_summary_widget)
+        summary_risk_classification_description_label.setText('По степени риска рабочее место отнесено к категории:')
+        self._summary_risk_classification_value_label = QLabel('Низкий', parent=table_summary_widget)
+        self._summary_risk_classification_value_label.setObjectName('CLASSIFICATION_VALUE_TEXT')
+        table_summary_widget_layout_inner.addWidget(summary_risk_classification_description_label, 3, 0)
+        table_summary_widget_layout_inner.addWidget(self._summary_risk_classification_value_label, 3, 1)
+
         buttons_widget = QWidget()
         buttons_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         buttons_widget.setStyleSheet("""
@@ -336,23 +381,23 @@ class RiskAnalysisMainForm(QMainWindow):
                 font-size: 16px;
                 font-weight: bold;
             }
-            QPushButton#Calculate {
+            QPushButton#CalculateButton {
                 background-color: #424874; 
             }
             QPushButton:hover {
                 background-color: #8a9cf3;
             }
-            QPushButton#Calculate:hover {
+            QPushButton#CalculateButton:hover {
                 background-color: #3c3c6c;
             }
         """)
         
-        self.button_print = QPushButton('Print', parent=buttons_widget)
+        self.button_print = QPushButton('Печать', parent=buttons_widget)
         self.button_print.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.button_calculate = QPushButton('Calculate', parent=buttons_widget)
+        self.button_calculate = QPushButton('Расчитать', parent=buttons_widget)
         self.button_calculate.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.button_calculate.setObjectName('Calculate')
-        self.button_convert_to = QPushButton('Convert to...', parent=buttons_widget)
+        self.button_calculate.setObjectName('CalculateButton')
+        self.button_convert_to = QPushButton('Преобразовать в...', parent=buttons_widget)
         self.button_convert_to.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         
         table_params_outer_frame = QFrame(table_widget)
@@ -370,6 +415,7 @@ class RiskAnalysisMainForm(QMainWindow):
         table_widget_layout.addWidget(table_widget_divider2)
         table_widget_layout.addWidget(self.riskDataTableWidget)
         table_widget_layout.addWidget(table_widget_divider3)
+        table_widget_layout.addWidget(table_summary_widget)
 
         buttons_widget_layout = QHBoxLayout(buttons_widget)
         buttons_widget_layout.setSpacing(50)
@@ -432,4 +478,36 @@ class RiskAnalysisMainForm(QMainWindow):
     @used_materials_text.setter
     def used_materials_text(self, value: str):
         self._usedInstrumentsMaterialsTextEdit.setText(value)
+
+    @property
+    def summary_risk_level_text(self):
+        return self._summary_risk_level_value_label.text()
+    
+    @summary_risk_level_text.setter
+    def summary_risk_level_text(self, value: str):
+        self._summary_risk_level_value_label.setText(value)
+    
+    @property
+    def summary_risk_indicator_text(self):
+        return self._summary_risk_indicator_value_label.text()
+    
+    @summary_risk_indicator_text.setter
+    def summary_risk_indicator_text(self, value: str):
+        self._summary_risk_indicator_value_label.setText(value)
+    
+    @property
+    def summary_risk_final_level_text(self):
+        return self._summary_risk_final_level_value_label.text()
+    
+    @summary_risk_final_level_text.setter
+    def summary_risk_final_level_text(self, value: str):
+        self._summary_risk_final_level_value_label.setText(value)
+    
+    @property
+    def summary_risk_classification_text(self):
+        return self._summary_risk_classification_value_label.text()
+    
+    @summary_risk_classification_text.setter
+    def summary_risk_classification_text(self, value: str):
+        self._summary_risk_classification_value_label.setText(value)
 

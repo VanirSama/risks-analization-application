@@ -38,7 +38,7 @@ pyhton -m venv .venv
 ## Установка зависимостей
 Находясь в директории проекта с активированной виртуальной средой, выполните команду:
 ```commandline
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 ## Запуск приложения

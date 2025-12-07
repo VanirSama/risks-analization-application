@@ -29,6 +29,7 @@ cd path\to\your\project
 
 ## Создайте и активируйте виртуальную среду
 Находясь в директории проекта, выполните команды:
+
 Windows (cmd)
 ```cmd
 python -m venv .venv

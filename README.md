@@ -29,10 +29,16 @@ cd path\to\your\project
 
 ## Создайте и активируйте виртуальную среду
 Находясь в директории проекта, выполните команды:
-```commandline
-pyhton -m venv .venv
+Windows (cmd)
+```cmd
+python -m venv .venv
 ".venv\Scripts\activate.bat"
-``` 
+```
+или Linux / macOS
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
 После введения команды должно появиться выражение (.venv)
 
 ## Установка зависимостей

@@ -18,7 +18,7 @@ class DatabaseManager:
 
 	@staticmethod
 	def load_database() -> dict:
-		with open(Path("backend/db.json").resolve(), mode="r", encoding="utf-8") as f:
+		with open(Path(__file__).parent / "db.json", mode="r", encoding="utf-8") as f:
 			database: dict = json.load(f)
 		return database
 

@@ -21,7 +21,7 @@ class MainMenuPage(QWidget):
                 color: #4a4a7d;
                 font-size: 36px;
                 font-weight: light;
-                font-family: '{Fonts.STROGO}';
+                font-family: "{Fonts.STROGO}";
                 margin: 20px;
             }}""")
 

@@ -1,16 +1,18 @@
-from src.utils.utils import normalize_path
+from src.utils.utils import normalize_path, SingletonMeta
 
 from pathlib import Path
+from PySide6.QtWidgets import QApplication
 from typing import Optional, Any
 import sys, os
 
 
-class ResourceLoader:
+class ResourceLoader(metaclass=SingletonMeta):
     BASE_DIR        = Path(sys._MEIPASS) if hasattr(sys, '_MEIPASS') else Path(__file__).parent.parent.parent
     SRC_DIR         = BASE_DIR / "src"
     ASSETS          = SRC_DIR / "assets"
     ICONS           = ASSETS / "icons"
     FONTS           = ASSETS / "fonts"
+    DOCS_TEMPLATES  = ASSETS / "templates"
     DATABASE        = SRC_DIR / "core" / "database"
 
     APPDATA         = Path(os.getenv("APPDATA")) / "AURA"
@@ -27,6 +29,10 @@ class ResourceLoader:
     DATABASE_FILE   = DATABASE / "db.json"
     RECENT_FILES    = APPDATA / "recent_files.dat"
     CRASHLOG        = APPDATA / "crashlog.log"
+    ENV             = BASE_DIR / ".env"
+
+    def __init__(self, app: QApplication):
+        self._app = app
 
     def get(self, attr: str, fallback: Optional[Any] = None) -> Any:
         if ret:=self.__getitem__(attr): return ret
@@ -37,4 +43,4 @@ class ResourceLoader:
         else: return None
 
 
-RESOURCE_LOADER = ResourceLoader()
+# RESOURCE_LOADER = ResourceLoader()

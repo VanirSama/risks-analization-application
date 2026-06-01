@@ -1,15 +1,17 @@
-from src.core.database.manager import DatabaseManager, DATABASE
+from src.core.database.manager import DatabaseManager
 from src.core.file_system import File, FileIntegrityError
 from src.utils.utils import normalize_path
 
 from dataclasses import dataclass
 from pathlib import Path
+from PySide6.QtWidgets import QApplication
 from typing import Optional, Callable, Self
 import json, copy, gzip
 
 
 class Record:
-    def __init__(self, on_modified_callback: Optional[Callable] = None):
+    def __init__(self, app: QApplication, on_modified_callback: Optional[Callable] = None):
+        self._app = app
         self._n: str = ""
         self._danger: str = ""
         self._n_: str = ""
@@ -48,7 +50,7 @@ class Record:
 
     @danger.setter
     def danger(self, danger: str) -> None:
-        if danger in DATABASE.dangers:
+        if danger in self._app.database_manager.dangers:
             self._n, self._danger = danger.split(" ", 1)
             self._event = ""
             self._trigger_on_modification()
@@ -67,7 +69,7 @@ class Record:
 
     @event.setter
     def event(self, event) -> None:
-        if self._danger and event in DATABASE.get_events(f"{self._n}. {self._danger}"):
+        if self._danger and event in self._app.database_manager.get_events(f"{self._n}. {self._danger}"):
             self._n_, self._event = event.split(" ", 1)
             self._trigger_on_modification()
 
@@ -187,7 +189,9 @@ class Record:
 
 
 class RecordsTable:
-    def __init__(self, **kwargs):
+    def __init__(self, app: QApplication):
+        self._app = app
+
         self._weight_sum: float = 0.0
 
         self._table: list[Record] = []
@@ -234,7 +238,7 @@ class RecordsTable:
         self.mark_modified()
 
     def add_record(self) -> None:
-        self.table.append(Record(on_modified_callback=self.mark_modified))
+        self.table.append(Record(app=self._app, on_modified_callback=self.mark_modified))
         self.mark_modified()
 
     def remove_record(self, index: int) -> None:
@@ -333,7 +337,7 @@ class RecordsTable:
 
         for record in self.table:
             if record.rating == "Умеренный" or record.rating == "Высокий":
-                tmp.extend(DATABASE.reg.get(f'{record.n}. {record.danger}').get(f'{record.n_} {record.event}'))
+                tmp.extend(self._app.database_manager.reg.get(f'{record.n}. {record.danger}').get(f'{record.n_} {record.event}'))
 
         temp_methods = list(set(tmp))
         temp_methods.sort()
@@ -374,9 +378,9 @@ class RiskMapFile(File, RecordsTable):
     _NEW_COUNTER = 0
     DEFAULT_NAME = "Новая карта"
 
-    def __init__(self):
+    def __init__(self, app: QApplication):
         File.__init__(self)
-        RecordsTable.__init__(self)
+        RecordsTable.__init__(self, app)
         self._save_path: str = ""
         self._metadata = Metadata()
         self._regulatory_docs: list = DatabaseManager.REGULATORY_DOCS
@@ -390,6 +394,9 @@ class RiskMapFile(File, RecordsTable):
     @classmethod
     def increase_counter(cls):
         cls._NEW_COUNTER += 1
+
+    def __del__(self) -> None:
+        self._NEW_COUNTER -= 1
 
     @property
     def save_path(self) -> str:
@@ -496,7 +503,7 @@ class RiskMapFile(File, RecordsTable):
         return True
 
     @classmethod
-    def load_from_file(cls, open_path: Optional[Path | str]) -> Optional[Self]:
+    def load_from_file(cls, app: QApplication, open_path: Optional[Path | str]) -> Optional[Self]:
         if not open_path: return None
         open_path: Path = Path(open_path)
 
@@ -519,7 +526,7 @@ class RiskMapFile(File, RecordsTable):
                     if _stored_checksum != calculated_checksum:
                         raise FileIntegrityError("Unable to read corrupted file")
 
-                risk_map = cls()
+                risk_map = cls(app)
                 risk_map._metadata.map_no = _payload.get("map_no", "")
                 risk_map._metadata.chairman = _payload.get("chairman", "")
                 risk_map._metadata.profession = _payload.get("profession", "")
@@ -535,7 +542,7 @@ class RiskMapFile(File, RecordsTable):
                 risk_map._name = open_path.stem
                 tmp_table = []
                 for record_data in _payload.get("table", []):
-                    record = Record(on_modified_callback=risk_map.mark_modified)
+                    record = Record(risk_map._app, on_modified_callback=risk_map.mark_modified)
                     record._n = record_data.get("n", "")
                     record._danger = record_data.get("danger", "")
                     record._n_ = record_data.get("n_", "")

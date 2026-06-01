@@ -1,7 +1,11 @@
+from src.config.config_manager import ConfigManager
+from src.core.database.manager import DatabaseManager
 from src.services.error_handler import ErrorHandler
 from src.ui.components.splash import SplashScreen
 from src.ui.styles.fonts import load_fonts
 from src.ui.main_window import MainWindow
+from src.utils.resources import ResourceLoader
+from src.utils.utils import normalize_path
 from src.__version__ import get_version_info
 
 from pathlib import Path
@@ -12,14 +16,22 @@ import sys, os
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
+def get_env_path() -> str:
+    if getattr(sys, 'frozen', False): return normalize_path(Path(sys._MEIPASS) / ".env")
+    else: return normalize_path(Path(__file__).resolve().parent.parent.parent / ".env")
+
 
 class AuraApp(QApplication):
     def __init__(self) -> None:
         super().__init__(sys.argv)
 
-        self._file_to_open: Path | None = None
-        self._error_handler = None
-        self._main_window = None
+        self.resource_loader                = ResourceLoader(self)
+        self.database_manager               = DatabaseManager(self)
+        self.config_manager                 = ConfigManager(self)
+
+        self._file_to_open: Path | None     = None
+        self._error_handler                 = None
+        self._main_window                   = None
 
         if len(sys.argv) > 1:
             if sys.argv[1] == '--register':
@@ -38,12 +50,21 @@ class AuraApp(QApplication):
 
                 self._file_to_open = arg_path
 
-        self._splash = SplashScreen()
+        self._validate_license()
+
+        self._splash = SplashScreen(self)
         self._splash.show()
 
+    # TODO
+    def _validate_license(self) -> None: ...
+
     def _setup(self) -> None:
-        load_fonts()
-        self._main_window = MainWindow(get_version_info())
+        from dotenv import load_dotenv
+
+        load_dotenv(dotenv_path=get_env_path())
+        load_fonts(self)
+
+        self._main_window = MainWindow(self, get_version_info())
 
         if self._file_to_open:
             self._main_window.open_file_from_args(self._file_to_open)

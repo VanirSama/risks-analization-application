@@ -1,6 +1,5 @@
 from src.core.converters.base import Converter
 from src.models.risk_map import RiskMapFile
-from src.utils.resources import RESOURCE_LOADER
 
 from docx import Document
 from docx.enum.section import WD_ORIENT
@@ -9,14 +8,15 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.shared import Pt, Inches, RGBColor
 from pathlib import Path
+from PySide6.QtWidgets import QApplication
 
 
 class RiskMapToDocxConverter(Converter[RiskMapFile]):
     FILTER_STRING = "Документы MS Word (*.docx)"
     OUTPUT_FORMAT = "docx"
 
-    def __init__(self, risk_map: RiskMapFile):
-        super().__init__(risk_map)
+    def __init__(self, app: QApplication, risk_map: RiskMapFile):
+        super().__init__(app, risk_map)
         self._file: RiskMapFile = risk_map
 
         self._document = Document()
@@ -51,7 +51,7 @@ class RiskMapToDocxConverter(Converter[RiskMapFile]):
         section.bottom_margin = Inches(0.5)
 
     def _add_logo(self) -> None:
-        self._document.add_picture(RESOURCE_LOADER.get("LOGO_COLORED", ""), width=Inches(1))
+        self._document.add_picture(self._app.resource_loader.get("LOGO_COLORED", ""), width=Inches(1))
         logo_paragraph = self._document.paragraphs[-1]
         logo_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
         paragraph_format = logo_paragraph.paragraph_format

@@ -5,13 +5,16 @@ from src.utils.utils import normalize_path
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
+from PySide6.QtWidgets import QApplication
 from typing import Optional, Self, Callable
 import json, copy, gzip
 
 
 class Entry:
-    def __init__(self, risk_map: RiskMapFile, on_modified_callback: Optional[Callable] = None):
+    def __init__(self, app: QApplication, risk_map: RiskMapFile, on_modified_callback: Optional[Callable] = None):
         if not risk_map: raise ValueError("RiskMapFile object cannot be None.")
+
+        self._app = app
 
         self._workplace_no: str = risk_map.map_no
         self._profession: str = risk_map.profession
@@ -32,7 +35,7 @@ class Entry:
         return True
 
     def validate_checksum(self) -> bool:
-        risk_map = RiskMapFile.load_from_file(self._reference_path)
+        risk_map = RiskMapFile.load_from_file(self._app, self._reference_path)
         if not risk_map: raise FileIntegrityError(f"Unable to initialize RiskMapFile object from {self._reference_path}.")
 
         stored_checksum = Entry.get_stored_checksum(risk_map)
@@ -151,8 +154,11 @@ class RiskSummaryFile(File):
     _NEW_COUNTER = 0
     DEFAULT_NAME = "Новая сводная ведомость"
 
-    def __init__(self):
+    def __init__(self, app: QApplication) -> None:
         File.__init__(self)
+
+        self._app = app
+
         self._save_path: str = ""
         self._metadata: Metadata = Metadata()
         self._name: str = self.DEFAULT_NAME if not self._NEW_COUNTER else f"{self.DEFAULT_NAME} {self._NEW_COUNTER}"  # Mock
@@ -175,6 +181,9 @@ class RiskSummaryFile(File):
     def increase_counter(cls):
         cls._NEW_COUNTER += 1
 
+    def __del__(self) -> None:
+        self._NEW_COUNTER -= 1
+
     @property
     def entries_table(self) -> list[Entry]:
         return self._entries_table
@@ -191,7 +200,7 @@ class RiskSummaryFile(File):
         if any(e.checksum == existing_checksum for e in self._entries_table):
             return
 
-        self._entries_table.append(Entry(on_modified_callback=self.mark_modified, risk_map=risk_map))
+        self._entries_table.append(Entry(self._app, on_modified_callback=self.mark_modified, risk_map=risk_map))
         self._loaded_risk_maps.append(risk_map)
         self.mark_modified()
 
@@ -355,7 +364,7 @@ class RiskSummaryFile(File):
         return True
 
     @classmethod
-    def load_from_file(cls, open_path: Optional[Path | str]) -> Optional[Self]:
+    def load_from_file(cls, app: QApplication, open_path: Optional[Path | str]) -> Optional[Self]:
         if not open_path: return None
         open_path: Path = Path(open_path)
 
@@ -378,7 +387,7 @@ class RiskSummaryFile(File):
                     if _stored_checksum != calculated_checksum:
                         raise FileIntegrityError("Unable to read corrupted file")
 
-                risk_summary = cls()
+                risk_summary = cls(app)
                 risk_summary._metadata.org_name = _payload.get("org_name", "")
                 risk_summary._metadata.address = _payload.get("address", "")
                 risk_summary._metadata.position = _payload.get("position", "")
@@ -399,11 +408,11 @@ class RiskSummaryFile(File):
                         risk_summary._missing_paths_entries.append(entry_data)
                         continue
 
-                    loaded_risk_map = RiskMapFile.load_from_file(stored_path)
+                    loaded_risk_map = RiskMapFile.load_from_file(app, stored_path)
                     if not loaded_risk_map: continue
 
                     risk_summary._loaded_risk_maps.append(loaded_risk_map)
-                    entry = Entry(on_modified_callback=risk_summary.mark_modified, risk_map=loaded_risk_map)
+                    entry = Entry(app=app, on_modified_callback=risk_summary.mark_modified, risk_map=loaded_risk_map)
 
                     hashed_data = Entry.get_stored_checksum(loaded_risk_map)
                     if hashed_data in loaded_checksums: continue

@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from hashlib import sha256
 from pathlib import Path
 from typing import Self, Optional, TypeVar
+from PySide6.QtWidgets import QApplication
 import json
 
 
@@ -45,7 +46,7 @@ class File(ABC):
 
     @classmethod
     @abstractmethod
-    def load_from_file(cls, open_path: Optional[Path | str]) -> Optional[Self]:
+    def load_from_file(cls, app: QApplication, open_path: Optional[Path | str]) -> Optional[Self]:
         pass
 
     @staticmethod

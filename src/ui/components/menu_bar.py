@@ -1,5 +1,5 @@
 from src.ui.styles.qss_styles import Styles
-from src.utils.resources import RESOURCE_LOADER
+from src.utils.resources import ResourceLoader
 from src.utils.utils import normalize_path
 
 from dataclasses import dataclass

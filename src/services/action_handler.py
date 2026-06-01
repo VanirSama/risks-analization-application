@@ -3,21 +3,16 @@ from src.models.risk_map import RiskMapFile
 from src.utils.file_mapping import FileMapping
 from src.utils.utils import normalize_path
 
-from dotenv import load_dotenv
 from pathlib import Path
-from PySide6.QtWidgets import QFileDialog
+from PySide6.QtWidgets import QFileDialog, QApplication
 import sys, os, webbrowser
 
 
-def get_env_path() -> str:
-    if getattr(sys, 'frozen', False): return normalize_path(Path(sys._MEIPASS) / ".env")
-    else: return normalize_path(Path(__file__).resolve().parent.parent.parent / ".env")
-
 class ActionHandler:
-    load_dotenv(dotenv_path=get_env_path())
     _HELP_URL = os.getenv("HELP_URL")
 
-    def __init__(self, parent) -> None:
+    def __init__(self, app: QApplication, parent) -> None:
+        self._app = app
         self._parent = parent
 
     def on_help(self) -> None:
@@ -43,7 +38,7 @@ class ActionHandler:
         )
 
         if template_path:
-            risk_map = RiskMapFile.load_from_file(open_path=template_path)
+            risk_map = RiskMapFile.load_from_file(self._app, open_path=template_path)
             if risk_map:
                 risk_map.save_path = None
                 risk_map._name = None

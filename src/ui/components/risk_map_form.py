@@ -1,4 +1,4 @@
-from src.core.database.manager import DatabaseManager, DATABASE
+from src.core.database.manager import DatabaseManager
 from src.models.risk_map import RiskMapFile, Record
 from src.ui.components.animations import PulsingButton
 from src.ui.components.delegates import ComboBoxDelegate
@@ -6,7 +6,7 @@ from src.ui.styles.qss_styles import Styles
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QGridLayout, QHeaderView, QLineEdit, QPushButton, QScrollArea, QSizePolicy, \
-QTableWidgetItem, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QFrame, QTableWidget
+QTableWidgetItem, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QFrame, QTableWidget, QApplication
 
 
 class RiskDataTableHorizontalHeaderView(QHeaderView):
@@ -32,18 +32,21 @@ class RiskDataTableHorizontalHeaderView(QHeaderView):
 
 
 class RiskDataTable(QTableWidget):
-    def __init__(self, parent: QWidget, risk_map: RiskMapFile) -> None:
-        self._column_names = [
-            '',
-            '№ п/п',
-            'Опасность',
-            'Опасное событие',
-            'Качественное значение тяжести ущерба',
-            'Качественное значение подверженности опасности',
-            'Качественное значение вероятности возникновения опасности',
-            'Оценка значимости риска по отдельной опасности',
-        ]
-        super().__init__(1, len(self._column_names), parent)
+    _COLUMN_NAMES = [
+        '',
+        '№ п/п',
+        'Опасность',
+        'Опасное событие',
+        'Качественное значение тяжести ущерба',
+        'Качественное значение подверженности опасности',
+        'Качественное значение вероятности возникновения опасности',
+        'Оценка значимости риска по отдельной опасности',
+    ]
+
+    def __init__(self, app: QApplication, parent: QWidget, risk_map: RiskMapFile) -> None:
+
+        super().__init__(1, len(self._COLUMN_NAMES), parent)
+        self._app = app
         self.risk_map = risk_map
         self._setup_ui()
         self._setup_connections()
@@ -63,7 +66,7 @@ class RiskDataTable(QTableWidget):
         self.verticalHeader().setDefaultSectionSize(30)
         self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
         self.setHorizontalHeader(RiskDataTableHorizontalHeaderView(self))
-        self.setHorizontalHeaderLabels(self._column_names)
+        self.setHorizontalHeaderLabels(self._COLUMN_NAMES)
         self.setStyleSheet(Styles.TABLE)
 
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -116,7 +119,7 @@ class RiskDataTable(QTableWidget):
         self.setItem(row, 5, QTableWidgetItem(""))
         self.setItem(row, 6, QTableWidgetItem(""))
 
-        if danger in DATABASE.dangers:
+        if danger in self._app.database_manager.dangers:
             self.item(row, 2).setText(danger)
             record = self._get_or_create_record(row)
             record.danger = danger
@@ -133,7 +136,7 @@ class RiskDataTable(QTableWidget):
 
         event = event_item.text()
         danger = danger_item.text()
-        if danger in DATABASE.dangers and event in DATABASE.get_events(danger):
+        if danger in self._app.database_manager.dangers and event in self._app.database_manager.get_events(danger):
             record = self._get_or_create_record(row)
             record.event = event
 
@@ -173,7 +176,7 @@ class RiskDataTable(QTableWidget):
         add_button.clicked.connect(self.add_row)
         self.setCellWidget(row, 0, add_button)
 
-        for col in range(1, len(self._column_names)):
+        for col in range(1, len(self._COLUMN_NAMES)):
             item = QTableWidgetItem()
             item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -195,7 +198,7 @@ class RiskDataTable(QTableWidget):
         remove_button.clicked.connect(self.on_remove_row_clicked)
         self.setCellWidget(row_index, 0, remove_button)
 
-        for col in range(1, len(self._column_names)):
+        for col in range(1, len(self._COLUMN_NAMES)):
             item = QTableWidgetItem()
             item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             item.setData(Qt.ItemDataRole.UserRole, Qt.TextFlag.TextWordWrap)
@@ -236,11 +239,12 @@ class RiskDataTable(QTableWidget):
 
 
 class MethodsTable(QTableWidget):
-    def __init__(self, parent: QWidget, risk_map: RiskMapFile) -> None:
+    def __init__(self, app: QApplication, parent: QWidget, risk_map: RiskMapFile) -> None:
         self._column_names = ['', 'Общие меры по управлению рисками']
 
         super().__init__(1, len(self._column_names), parent)
-        self.riskMap = risk_map
+        self._app = app
+        self.risk_map = risk_map
         self.initialize_default_row()
         self.parent = parent
 
@@ -291,12 +295,12 @@ class MethodsTable(QTableWidget):
             for row in range(self.rowCount()):
                 if self.cellWidget(row, 0) == button:
                     method = self.item(row, 1).text()
-                    if method in self.riskMap.methods:
-                        self.riskMap.methods.remove(method)
+                    if method in self.risk_map.methods:
+                        self.risk_map.methods.remove(method)
                     self.removeRow(row)
                     break
         self.update_height()
-        self.riskMap.mark_modified()
+        self.risk_map.mark_modified()
 
     def update_height(self) -> None:
         row_height = self.rowHeight(0) if self.rowCount() > 0 else 30
@@ -305,8 +309,9 @@ class MethodsTable(QTableWidget):
 
 
 class RiskAnalysisMainForm(QWidget):
-    def __init__(self, risk_map: RiskMapFile, parent=None) -> None:
+    def __init__(self, app: QApplication, risk_map: RiskMapFile, parent=None) -> None:
         super().__init__(parent)
+        self._app = app
         self.risk_map = risk_map
         self.setStyleSheet(Styles.SCROLL_AREA)
 
@@ -417,8 +422,8 @@ class RiskAnalysisMainForm(QWidget):
         outer_layout.addStretch(1)
 
     def _init_tables(self) -> None:
-        self.risk_data_table_widget = RiskDataTable(parent=self, risk_map=self.risk_map)
-        self.methods_data_table_widget = MethodsTable(parent=self, risk_map=self.risk_map)
+        self.risk_data_table_widget = RiskDataTable(app=self._app, parent=self, risk_map=self.risk_map)
+        self.methods_data_table_widget = MethodsTable(app=self._app, parent=self, risk_map=self.risk_map)
 
     def _init_summary_section(self) -> None:
         self._summary_widget = QWidget(self._content_widget)

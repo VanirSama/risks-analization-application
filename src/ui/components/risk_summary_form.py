@@ -5,12 +5,13 @@ from src.ui.styles.qss_styles import Styles
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHeaderView, QLineEdit, QPushButton, QScrollArea, QSizePolicy, QTableWidgetItem, \
     QVBoxLayout, QHBoxLayout, QWidget, QLabel, QFrame, QTableWidget, QFileDialog, QMessageBox, QDialog, QListWidget, \
-    QDialogButtonBox
+    QDialogButtonBox, QApplication
 
 
 class MissingPathsDialog(QDialog):
-    def __init__(self, missing_entries: list[dict], parent=None):
+    def __init__(self, app: QApplication, missing_entries: list[dict], parent=None):
         super().__init__(parent)
+        self._app = app
         self.missing_entries = missing_entries
         self.resolved_paths = {}
         self.skipped_entries = []
@@ -147,7 +148,7 @@ class MissingPathsDialog(QDialog):
 
         if file_path:
             try:
-                risk_map = RiskMapFile.load_from_file(file_path)
+                risk_map = RiskMapFile.load_from_file(self._app, file_path)
                 if risk_map:
                     found_checksum = Entry.get_stored_checksum(risk_map)
                     if found_checksum != entry_checksum: return
@@ -210,16 +211,18 @@ class RiskSummaryTableHorizontalHeaderView(QHeaderView):
 
 
 class RiskSummaryTable(QTableWidget):
-    def __init__(self, parent: QWidget, risk_summary: RiskSummaryFile) -> None:
-        self._column_names = [
-            '',
-            '№ п/п',
-            'Номер рабочего места',
-            'Наименование профессии (должности)',
-            'Уровень профессионального риска',
-            'Классификация',
-        ]
-        super().__init__(1, len(self._column_names), parent)
+    _COLUMN_NAMES = [
+        '',
+        '№ п/п',
+        'Номер рабочего места',
+        'Наименование профессии (должности)',
+        'Уровень профессионального риска',
+        'Классификация',
+    ]
+    def __init__(self, app: QApplication, parent: QWidget, risk_summary: RiskSummaryFile) -> None:
+
+        super().__init__(1, len(self._COLUMN_NAMES), parent)
+        self._app = app
         self.risk_summary = risk_summary
         self._setup_ui()
         self._setup_connections()
@@ -236,7 +239,7 @@ class RiskSummaryTable(QTableWidget):
         self.verticalHeader().setDefaultSectionSize(30)
         self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
         self.setHorizontalHeader(RiskSummaryTableHorizontalHeaderView(self))
-        self.setHorizontalHeaderLabels(self._column_names)
+        self.setHorizontalHeaderLabels(self._COLUMN_NAMES)
         self.setStyleSheet(Styles.TABLE)
 
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -275,7 +278,7 @@ class RiskSummaryTable(QTableWidget):
         add_button.clicked.connect(self.add_row)
         self.setCellWidget(row, 0, add_button)
 
-        for col in range(1, len(self._column_names)):
+        for col in range(1, len(self._COLUMN_NAMES)):
             item = QTableWidgetItem()
             item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             item.setFlags(Qt.ItemFlag.NoItemFlags)
@@ -293,7 +296,7 @@ class RiskSummaryTable(QTableWidget):
 
         for file_path in file_paths:
             try:
-                risk_map = RiskMapFile.load_from_file(file_path)
+                risk_map = RiskMapFile.load_from_file(self._app, file_path)
                 if risk_map:
                     existing_checksum = Entry.get_stored_checksum(risk_map)
                     if any(e.checksum == existing_checksum for e in self.risk_summary.entries_table):
@@ -386,8 +389,9 @@ class RiskSummaryTable(QTableWidget):
 
 
 class RiskSummaryMainForm(QWidget):
-    def __init__(self, risk_summary: RiskSummaryFile, parent=None) -> None:
+    def __init__(self, app: QApplication, risk_summary: RiskSummaryFile, parent=None) -> None:
         super().__init__(parent)
+        self._app = app
         self.risk_summary = risk_summary
         self.setStyleSheet(Styles.SCROLL_AREA)
 
@@ -486,7 +490,7 @@ class RiskSummaryMainForm(QWidget):
         outer_layout.addStretch(1)
 
     def _init_tables(self) -> None:
-        self.risk_summary_table_widget = RiskSummaryTable(parent=self, risk_summary=self.risk_summary)
+        self.risk_summary_table_widget = RiskSummaryTable(app=self._app, parent=self, risk_summary=self.risk_summary)
 
     def _init_buttons(self) -> None:
         self._buttons_widget = QWidget()
@@ -589,19 +593,19 @@ class RiskSummaryMainForm(QWidget):
 
     def _handle_missing_and_invalid_entries(self):
         if self.risk_summary.missing_paths_entries:
-            dialog = MissingPathsDialog(self.risk_summary.missing_paths_entries.copy(), self)
+            dialog = MissingPathsDialog(self._app, self.risk_summary.missing_paths_entries.copy(), self)
             dialog.exec()
 
             for old_path, new_path in dialog.resolved_paths.items():
                 try:
-                    risk_map = RiskMapFile.load_from_file(new_path)
+                    risk_map = RiskMapFile.load_from_file(self._app, new_path)
                     if risk_map: self.risk_summary.add_entry(risk_map)
                 except Exception as e: pass
 
                 for entry in self.risk_summary.entries_table:
                     if entry.reference_path == old_path:
                         entry.reference_path = new_path
-                        risk_map = RiskMapFile.load_from_file(new_path)
+                        risk_map = RiskMapFile.load_from_file(self._app, new_path)
                         if risk_map:
                             entry.sync(risk_map)
 

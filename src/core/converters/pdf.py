@@ -1,6 +1,5 @@
 from src.core.converters.base import Converter
 from src.models.risk_map import RiskMapFile
-from src.utils.resources import RESOURCE_LOADER
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
@@ -11,14 +10,15 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from pathlib import Path
+from PySide6.QtWidgets import QApplication
 
 
 class RiskMapToPdfConverter(Converter[RiskMapFile]):
     FILTER_STRING = "Документы PDF (*.pdf)"
     OUTPUT_FORMAT = "pdf"
 
-    def __init__(self, risk_map: RiskMapFile):
-        super().__init__(risk_map)
+    def __init__(self, app: QApplication, risk_map: RiskMapFile):
+        super().__init__(app, risk_map)
         self._file: RiskMapFile = risk_map
         self._story = []
         self._setup_fonts()
@@ -129,7 +129,7 @@ class RiskMapToPdfConverter(Converter[RiskMapFile]):
 
     def _add_logo(self) -> None:
         try:
-            logo_path = RESOURCE_LOADER.get("LOGO_COLORED", "")
+            logo_path = self._app.resource_loader.get("LOGO_COLORED", "")
             if logo_path and Path(logo_path).exists():
                 logo = Image(logo_path, width=0.89 * inch, height=0.5 * inch)
                 logo.hAlign = 'CENTER'

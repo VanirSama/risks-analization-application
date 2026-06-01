@@ -1,8 +1,8 @@
-from src.core.database.manager import DATABASE, DatabaseManager
+from src.core.database.manager import DatabaseManager
 from src.ui.styles.qss_styles import Styles
 
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtWidgets import QStyledItemDelegate, QTableWidget, QComboBox, QCompleter, QListView
+from PySide6.QtWidgets import QStyledItemDelegate, QTableWidget, QComboBox, QCompleter, QListView, QApplication
 
 
 class MultiLineItemDelegate(QStyledItemDelegate):
@@ -18,8 +18,9 @@ class MultiLineItemDelegate(QStyledItemDelegate):
 
 
 class ComboBoxDelegate(QStyledItemDelegate):
-    def __init__(self, parent: QTableWidget = None):
+    def __init__(self, app: QApplication, parent: QTableWidget = None):
         super().__init__(parent)
+        self._app = app
         self.parent_table = parent
 
     def createEditor(self, parent, option, index):
@@ -38,11 +39,11 @@ class ComboBoxDelegate(QStyledItemDelegate):
         editor.setStyleSheet(Styles.COMBO_BOX)
 
         if index.column() == 2:
-            editor.addItems(DATABASE.dangers)
+            editor.addItems(self._app.database_manager.dangers)
 
         elif index.column() == 3:
             danger_item = self.parent_table.item(index.row(), 2)
-            if danger_item and danger_item.text(): editor.addItems(DATABASE.get_events(danger_item.text()))
+            if danger_item and danger_item.text(): editor.addItems(self._app.database_manager.get_events(danger_item.text()))
 
         elif index.column() == 4:
             editor.addItems(DatabaseManager.DAMAGE.keys())

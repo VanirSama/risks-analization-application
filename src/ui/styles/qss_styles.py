@@ -1,11 +1,11 @@
-from src.utils.resources import RESOURCE_LOADER
+from src.utils.resources import ResourceLoader
 from src.utils.utils import normalize_path
 
 from PySide6.QtCore import QDir
 
 
 class Styles:
-    QDir.addSearchPath("icons", normalize_path(RESOURCE_LOADER["ICONS"]))
+    QDir.addSearchPath("icons", normalize_path(ResourceLoader.ICONS))
     _CLOSE_ICON = "url(icons:close_button.svg)"
     
     SCROLL_AREA = """

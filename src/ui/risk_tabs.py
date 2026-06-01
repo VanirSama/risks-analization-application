@@ -8,7 +8,7 @@ from src.ui.components.rus_msg_box import RusMsgBox
 
 from pathlib import Path
 from PySide6.QtGui import Qt, QColor
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QTableWidgetItem, QFileDialog
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QTableWidgetItem, QFileDialog, QApplication
 from typing import Generic
 
 
@@ -24,10 +24,11 @@ class BaseTab(QWidget, Generic[TFile]):
 
 
 class RiskMapTab(BaseTab[RiskMapFile]):
-    def __init__(self, risk_map: RiskMapFile) -> None:
+    def __init__(self, app: QApplication, risk_map: RiskMapFile) -> None:
         super().__init__(risk_map)
+        self._app = app
         self.file = risk_map
-        self.form = RiskAnalysisMainForm(risk_map=self.file)
+        self.form = RiskAnalysisMainForm(app=self._app, risk_map=self.file)
 
         self._layout.addWidget(self.form)
 
@@ -71,7 +72,7 @@ class RiskMapTab(BaseTab[RiskMapFile]):
 
         if not save_path: return
 
-        converter = RiskMapConverterStrategy.create_converter(_filter, self.file)
+        converter = RiskMapConverterStrategy(self._app).create_converter(_filter, self.file)
         if not converter:
             RusMsgBox.warning(self, "Ошибка", "Неподдерживаемый формат файла.")
             return
@@ -154,10 +155,11 @@ class RiskMapTab(BaseTab[RiskMapFile]):
 
 
 class RiskSummaryTab(BaseTab[RiskSummaryFile]):
-    def __init__(self, risk_summary: RiskSummaryFile) -> None:
+    def __init__(self, app: QApplication, risk_summary: RiskSummaryFile) -> None:
         super().__init__(risk_summary)
+        self._app = app
         self.file = risk_summary
-        self.form = RiskSummaryMainForm(risk_summary=self.file)
+        self.form = RiskSummaryMainForm(app=self._app, risk_summary=self.file)
 
         self._layout.addWidget(self.form)
 
@@ -178,7 +180,7 @@ class RiskSummaryTab(BaseTab[RiskSummaryFile]):
 
         if not save_path: return
 
-        converter = RiskMapConverterStrategy.create_converter(_filter, self.file)
+        converter = RiskMapConverterStrategy(self._app).create_converter(_filter, self.file)
         if not converter:
             RusMsgBox.warning(self, "Ошибка", "Неподдерживаемый формат файла.")
             return

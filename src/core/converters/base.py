@@ -3,6 +3,7 @@ from src.__version__ import __title__, get_version_info
 
 from abc import ABC, abstractmethod
 from typing import Generic
+from PySide6.QtWidgets import QApplication
 from pathlib import Path
 
 
@@ -14,7 +15,8 @@ class Converter(ABC, Generic[TFile]):
     FILTER_STRING: str = ""
     OUTPUT_FORMAT: str = ""
 
-    def __init__(self, file: TFile):
+    def __init__(self, app: QApplication, file: TFile):
+        self._app = app
         self._file = file
 
     @abstractmethod

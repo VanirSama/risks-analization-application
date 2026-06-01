@@ -1,5 +1,4 @@
 from src.core.file_system import FileIntegrityError
-from src.utils.resources import RESOURCE_LOADER
 
 from pathlib import Path
 from PySide6.QtWidgets import QMessageBox, QApplication
@@ -9,7 +8,6 @@ import sys, traceback, logging
 
 
 class ErrorHandler:
-    _LOG_FILE = RESOURCE_LOADER.get("CRASHLOG")
     _LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     _DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -18,20 +16,13 @@ class ErrorHandler:
 
     def __init__(self, app: Optional[QApplication] = None, log_to_file: bool = True, show_dialog: bool = True,
             log_dir: Optional[Path] = None, exit_on_critical: bool = True) -> None:
-        """
-        Parameters:
-            app (Optional[QApplicaltion]): Экземпляр QApplication для отображения диалогов ошибок.
-            log_to_file (bool): Исрользовать ли логирование ошибок в файл.
-            show_dialog (bool): Показывать ли диалоговое окно пользователю.
-            log_dir (Optional[Path]): Директория для лог-файлов.
-            exit_on_critical (bool): Завершать ли приложение при критических ошибках.
-        """
 
         self._app = app
+        _log_file = self._app.resource_loader.get("CRASHLOG")
         self._log_to_file = log_to_file
         self._show_dialog = show_dialog
         self._exit_on_critical = exit_on_critical
-        self._log_file = log_dir or self._LOG_FILE
+        self._log_file = log_dir or _log_file
 
         self._original_excepthook = None
         self._logger = self._setup_logger()
@@ -51,7 +42,7 @@ class ErrorHandler:
         if self._log_to_file:
             try:
                 file_handler = logging.FileHandler(
-                    self._LOG_FILE, mode="a", encoding="utf-8"
+                    self._log_file, mode="a", encoding="utf-8"
                 )
                 file_handler.setLevel(logging.DEBUG)
                 file_formatter = logging.Formatter(self._LOG_FORMAT, self._DATE_FORMAT)
@@ -67,13 +58,6 @@ class ErrorHandler:
         return self
 
     def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> bool:
-        """
-        Выход из контекста: обработка исключения, если оно произошло.
-
-        Returns:
-            True — исключение подавлено.
-            False — исключение пробрасывается дальше.
-        """
 
         self._uninstall_global_hooks()
 
@@ -102,10 +86,6 @@ class ErrorHandler:
             self._original_excepthook = None
 
     def _global_excepthook(self, exc_type: Type[BaseException], exc_val: BaseException, exc_tb: Optional[TracebackType]) -> None:
-        """
-        Глобальный перехватчик необработанных исключений.
-        Вызывается Python при любом unhandled exception.
-        """
 
         if issubclass(exc_type, KeyboardInterrupt):
             if self._original_excepthook:

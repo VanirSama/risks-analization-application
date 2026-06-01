@@ -8,11 +8,10 @@ from src.ui.risk_tabs import BaseTab, RiskMapTab, RiskSummaryTab
 from src.ui.components.menu_bar import MenuBar, MenuItem
 from src.ui.components.rus_msg_box import RusMsgBox
 from src.ui.components.workspace_page import WorkspacePage
-from src.utils.resources import RESOURCE_LOADER
 from src.utils.file_mapping import FileMapping
 from src.utils.utils import normalize_path
 
-from PySide6.QtWidgets import QMainWindow, QStackedWidget, QTabWidget, QStatusBar, QMessageBox, QFileDialog
+from PySide6.QtWidgets import QMainWindow, QStackedWidget, QTabWidget, QStatusBar, QMessageBox, QFileDialog, QApplication
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import QTimer
 from typing import Optional
@@ -23,13 +22,14 @@ class MainWindow(QMainWindow):
     PAGE_MENU = 0
     PAGE_WORKSPACE = 1
 
-    def __init__(self, title: str) -> None:
+    def __init__(self, app: QApplication, title: str) -> None:
         super().__init__()
 
+        self._app = app
         self._title = title
         self.setMinimumSize(400, 300)
         self.setWindowTitle(self._title)
-        self.setWindowIcon(QIcon(RESOURCE_LOADER.get("APP_ICON", "")))
+        self.setWindowIcon(QIcon(self._app.resource_loader.get("APP_ICON", "")))
         self.setStyleSheet("""
             QWidget {
                 background-color: #DCD6F7;
@@ -53,8 +53,8 @@ class MainWindow(QMainWindow):
 
         self._risk_files: list[File] = []
         self._current_tab_index: int = -1
-        self._recent_files_manager = RecentFilesManager()
-        self._action_handler = ActionHandler(self)
+        self._recent_files_manager = RecentFilesManager(self._app)
+        self._action_handler = ActionHandler(self._app, self)
 
         self._autosave_timer = QTimer()
         self._autosave_timer.setInterval(300000)
@@ -133,7 +133,7 @@ class MainWindow(QMainWindow):
         self._menu_page.recent_files_grid.clear()
         for file_path in self._recent_files_manager.recent_files:
             icon_path = FileMapping.RECENT_FILES_ICONS.get(Path(file_path).suffix, "text-x-generic")
-            icon = QIcon(icon_path)
+            icon = QIcon(normalize_path(icon_path))
             self._menu_page.recent_files_grid.add_item(file_path, icon)
 
     def _on_recent_file_clicked(self, file_path: str) -> None:
@@ -154,7 +154,7 @@ class MainWindow(QMainWindow):
         risk_file_class = FileMapping.EXTENSIONS_TO_CLASSES.get(Path(file_path).suffix, None)
         if not risk_file_class: return
 
-        risk_file = risk_file_class.load_from_file(open_path=file_path)
+        risk_file = risk_file_class.load_from_file(app=self._app, open_path=file_path)
         if not risk_file: return
 
         self._recent_files_manager.add_file(file_path)
@@ -177,7 +177,7 @@ class MainWindow(QMainWindow):
         tab_class = FileMapping.TABS_CLASSES.get(file_class, None)
         if not tab_class: return
 
-        tab = tab_class(risk_file)
+        tab = tab_class(self._app, risk_file)
         self._workspace_page.tab_widget.addTab(tab, risk_file.tab_name if hasattr(risk_file, "tab_name") else "")
 
         new_index = len(self._risk_files) - 1
@@ -217,13 +217,11 @@ class MainWindow(QMainWindow):
                 self._current_tab_index = index
                 self._on_save()
 
-            elif reply == QMessageBox.StandardButton.No:
-                pass
-            else:
-                return
+            elif reply == QMessageBox.StandardButton.No: pass
+            else: return
 
         self._workspace_page.tab_widget.removeTab(index)
-        self._risk_files.pop(index)
+        del self._risk_files[index]
 
         if len(self._risk_files) == 0:
             for cls in FileMapping.EXTENSIONS_TO_CLASSES.values():
@@ -258,12 +256,12 @@ class MainWindow(QMainWindow):
         self.show_workspace_page()
 
     def _on_new_risk_map(self) -> None:
-        risk_map = RiskMapFile()
+        risk_map = RiskMapFile(self._app)
         self.add_risk_file_tab(risk_map)
         self.show_workspace_page()
 
     def _on_new_risk_summary(self) -> None:
-        risk_summary = RiskSummaryFile()
+        risk_summary = RiskSummaryFile(self._app)
         self.add_risk_file_tab(risk_summary)
         self.show_workspace_page()
 
@@ -273,7 +271,7 @@ class MainWindow(QMainWindow):
 
         if not template_path: return
 
-        risk_map = RiskMapFile.load_from_file(open_path=template_path)
+        risk_map = RiskMapFile.load_from_file(app=self._app, open_path=template_path)
         if risk_map:
             risk_map._save_path = None
             risk_map._name = None

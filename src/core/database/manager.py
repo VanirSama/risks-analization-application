@@ -1,10 +1,11 @@
-from src.utils.resources import RESOURCE_LOADER
+from src.utils.utils import SingletonMeta
 
+from PySide6.QtWidgets import QApplication
 from typing import Optional, Any
 import json
 
 
-class DatabaseManager:
+class DatabaseManager(metaclass=SingletonMeta):
 	_FALLBACK = {
 		"1. Опасность": {
 			"Событие": ["Мера"]
@@ -43,7 +44,9 @@ class DatabaseManager:
 		"Приказ Минтруда РФ от 29.10.2021 N 776н \"Об утверждении примерного положения о системе управления охраной труда\""
 	]
 
-	def __init__(self) -> None:
+	def __init__(self, app: QApplication) -> None:
+		self._app = app
+
 		try:
 			self.reg: dict = self.load_registry()
 			if not self.reg:
@@ -53,9 +56,8 @@ class DatabaseManager:
 			# Fallback
 			self.reg = self._FALLBACK
 
-	@staticmethod
-	def load_registry() -> Optional[dict[str, Any]]:
-		with open(RESOURCE_LOADER.get("DATABASE_FILE", ""), mode="r", encoding="utf-8") as f:
+	def load_registry(self) -> Optional[dict[str, Any]]:
+		with open(self._app.resource_loader.get("DATABASE_FILE", ""), mode="r", encoding="utf-8") as f:
 			return json.load(f)
 
 	@property
@@ -68,4 +70,4 @@ class DatabaseManager:
 		return None
 
 
-DATABASE = DatabaseManager()
+# DATABASE = DatabaseManager()

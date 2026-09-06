@@ -1,6 +1,7 @@
 <p align="center">
   <img src="./src/assets/icons/logo.png" alt="AURA_logo">
 </p>
+
 ---
 
 ## АУРА (Автоматизированная Универсальная Риск-Аналитика) 1.0.3-alpha
